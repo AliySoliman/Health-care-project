@@ -865,7 +865,9 @@ if st.session_state.df is not None:
             'Benign': '#4CAF50',
             'Malignant': '#2196F3',
             '0': '#4CAF50',  # For numeric encoded benign
-            '1': '#2196F3'   # For numeric encoded malignant
+            '1': '#2196F3',  # For numeric encoded malignant
+            '3D_M': '#FF0000', 
+            '3D_B': '#00FF00'   # Green for benign
         }
     
         if st.session_state.df is not None:
@@ -992,7 +994,69 @@ if st.session_state.df is not None:
                     title=f"{y_feature} vs {x_feature}"
                 )
                 st.plotly_chart(fig_scatter, use_container_width=True)
-            
+
+
+            # ======== ADD THIS NEW SECTION ========
+            with st.expander("🚀 3D Tumor Feature Space", expanded=True):
+                st.subheader("Interactive 3D Feature Exploration")
+                
+                # Create three columns for feature selection
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    x_feature = st.selectbox("X-axis", viz_df.columns, index=0)
+                with col2:
+                    y_feature = st.selectbox("Y-axis", viz_df.columns, index=1)
+                with col3:
+                    z_feature = st.selectbox("Z-axis", viz_df.columns, index=2)
+                
+                # Additional controls
+                color_by = st.selectbox("Color by", ['diagnosis', 'radius_mean', 'texture_mean'])
+                size_by = st.selectbox("Size by (optional)", ['None', 'area_mean', 'perimeter_mean'])
+                sample_size = st.slider("Sample %", 10, 100, 100)
+                
+                # Create plot
+                if st.session_state.df is not None:
+                    plot_df = st.session_state.df.sample(frac=sample_size/100)
+                    
+                    fig = px.scatter_3d(
+                        plot_df,
+                        x=x_feature,
+                        y=y_feature,
+                        z=z_feature,
+                        color=color_by,
+                        size=size_by if size_by != 'None' else None,
+                        hover_name='id',
+                        hover_data=['diagnosis', 'radius_mean', 'texture_mean'],
+                        color_discrete_map={'M': '#FF0000', 'B': '#00FF00'},
+                        height=800,
+                        title=f"3D Tumor Feature Space: {x_feature} vs {y_feature} vs {z_feature}"
+                    )
+                    
+                    # Enhance visualization
+                    fig.update_traces(
+                        marker=dict(
+                            size=8 if size_by == 'None' else None,
+                            opacity=0.7,
+                            line=dict(width=0.5, color='DarkSlateGrey')
+                        ),
+                        selector=dict(mode='markers')
+                    )
+                    
+                    fig.update_layout(
+                        scene=dict(
+                            xaxis_title=x_feature,
+                            yaxis_title=y_feature,
+                            zaxis_title=z_feature,
+                            camera=dict(
+                                eye=dict(x=1.5, y=1.5, z=0.1)
+                        )
+                    )
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.warning("Please load data first")
+  
+
             # ================== Advanced Analytics ==================
             # Section 4: Network Graph of Feature Correlations
             with st.expander("🌐 Feature Correlation Network", expanded=True):
